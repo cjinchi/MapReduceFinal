@@ -27,10 +27,10 @@ public class TaskThree {
 
             StringTokenizer itr = new StringTokenizer(key.toString());
             Text Name = new Text();
-            IntWritable Number=new IntWritable();
-            if(itr.hasMoreTokens())
+            IntWritable Number = new IntWritable();
+            if (itr.hasMoreTokens())
                 Name.set(itr.nextToken());
-            if(itr.hasMoreTokens())
+            if (itr.hasMoreTokens())
                 Number.set(Integer.parseInt(itr.nextToken()));
             context.write(Name, Number);
         }
@@ -61,25 +61,26 @@ public class TaskThree {
         private int currentCount = 0;
 
 
-        private Map<String,Integer> postings = new LinkedHashMap<>();
+        private Map<String, Integer> postings = new LinkedHashMap<>();
+
         @Override
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
-            String firstName=key.toString();
-            String[] names=firstName.substring(1,firstName.length()-1).split(",");
-            firstName=names[0];
-            String secondName=names[1];
+            String firstName = key.toString();
+            String[] names = firstName.substring(1, firstName.length() - 1).split(",");
+            firstName = names[0];
+            String secondName = names[1];
             if (previousName == null || !previousName.equals(firstName)) {
                 writeCurrentName(context);
-                previousName=firstName;
+                previousName = firstName;
                 postings.clear();
-                currentCount=0;
+                currentCount = 0;
             }
-            int sum=0;
+            int sum = 0;
             for (IntWritable value : values) {
                 sum += value.get();
             }
-            currentCount=currentCount+sum;
-            postings.put(secondName,sum);
+            currentCount = currentCount + sum;
+            postings.put(secondName, sum);
 
         }
 
@@ -89,35 +90,35 @@ public class TaskThree {
         }
 
         private void writeCurrentName(Context context) throws IOException, InterruptedException {
-            double percent=1.0/currentCount;
+            double percent = 1.0 / currentCount;
             StringBuilder postingsBuilder = new StringBuilder();
             postingsBuilder.append('[');
-            int index=0;
-            for(Map.Entry<String,Integer> entry:postings.entrySet()){
-           //     System.out.println("key="+entry.getKey()+",value = "+entry.getValue());
-                if(index==0)
-                    index=1;
+            int index = 0;
+            for (Map.Entry<String, Integer> entry : postings.entrySet()) {
+                //     System.out.println("key="+entry.getKey()+",value = "+entry.getValue());
+                if (index == 0)
+                    index = 1;
                 else
                     postingsBuilder.append('|');
                 postingsBuilder.append(entry.getKey());
                 postingsBuilder.append(',');
-                postingsBuilder.append(entry.getValue()*percent);
+                postingsBuilder.append(entry.getValue() * percent);
             }
             postingsBuilder.append(']');
             str1.set(previousName);
             str2.set(postingsBuilder.toString());
-            context.write(str1,str2);
+            context.write(str1, str2);
         }
 
     }
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException{
+    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         //以下配置均参考自官方文档
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "inverted index");
         job.setJarByClass(TaskThree.class);
         job.setMapperClass(TaskThree.TaskThreeMapper.class);
-  //      job.setCombinerClass(InvertedIndex.InvertedIndexCombiner.class);
+        //      job.setCombinerClass(InvertedIndex.InvertedIndexCombiner.class);
         job.setReducerClass(TaskThree.TaskThreeReducer.class);
         job.setPartitionerClass(TaskThree.TaskThreePartitioner.class);
         job.setMapOutputKeyClass(Text.class);
