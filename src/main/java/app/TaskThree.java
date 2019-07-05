@@ -86,10 +86,13 @@ public class TaskThree {
 
         @Override
         public void cleanup(Context context) throws IOException, InterruptedException {
-            writeCurrentName(context);
+                writeCurrentName(context);
         }
 
         private void writeCurrentName(Context context) throws IOException, InterruptedException {
+            if(previousName == null){
+                return;
+            }
             double percent = 1.0 / currentCount;
             StringBuilder postingsBuilder = new StringBuilder();
             postingsBuilder.append('[');
@@ -107,6 +110,7 @@ public class TaskThree {
             postingsBuilder.append(']');
             str1.set(previousName);
             str2.set(postingsBuilder.toString());
+            System.out.println(previousName+postingsBuilder.toString());
             context.write(str1, str2);
         }
 
