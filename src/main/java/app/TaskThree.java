@@ -25,14 +25,14 @@ public class TaskThree {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 
-            StringTokenizer itr = new StringTokenizer(key.toString());
-            Text Name = new Text();
-            IntWritable Number = new IntWritable();
+            StringTokenizer itr = new StringTokenizer(value.toString());
+            Text name = new Text();
+            IntWritable number = new IntWritable();
             if (itr.hasMoreTokens())
-                Name.set(itr.nextToken());
+                name.set(itr.nextToken());
             if (itr.hasMoreTokens())
-                Number.set(Integer.parseInt(itr.nextToken()));
-            context.write(Name, Number);
+                number.set(Integer.parseInt(itr.nextToken()));
+            context.write(name, number);
         }
 
     }
@@ -65,9 +65,9 @@ public class TaskThree {
 
         @Override
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
-            String firstName = key.toString();
-            String[] names = firstName.substring(1, firstName.length() - 1).split(",");
-            firstName = names[0];
+            String twoNames = key.toString();
+            String[] names = twoNames.substring(1, twoNames.length() - 1).split(",");
+            String firstName = names[0];
             String secondName = names[1];
             if (previousName == null || !previousName.equals(firstName)) {
                 writeCurrentName(context);
