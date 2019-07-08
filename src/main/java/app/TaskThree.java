@@ -119,7 +119,7 @@ public class TaskThree {
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         //以下配置均参考自官方文档
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "inverted index");
+        Job job = Job.getInstance(conf, "task3");
         job.setJarByClass(TaskThree.class);
         job.setMapperClass(TaskThree.TaskThreeMapper.class);
         //      job.setCombinerClass(InvertedIndex.InvertedIndexCombiner.class);
