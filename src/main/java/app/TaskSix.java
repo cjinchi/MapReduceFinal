@@ -5,6 +5,8 @@ import org.apache.hadoop.fs.Path;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapred.lib.InputSampler;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -40,6 +42,18 @@ public class TaskSix {
                 context.write(value,key);
             }
 
+        }
+    }
+
+    public static class KeyComparator extends WritableComparator {
+        protected KeyComparator(){
+            super(Text.class,true);
+        }
+        @Override
+        public int compare(WritableComparable writableComparable1,WritableComparable writableComparable2){
+            double value1=Double.valueOf(writableComparable1.toString());
+            double value2=Double.valueOf(writableComparable2.toString());
+            return  (int)(value1-value2);
         }
     }
 
