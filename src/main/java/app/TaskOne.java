@@ -29,8 +29,6 @@ public class TaskOne {
 
         @Override
         public void setup(Context context) throws IOException, InterruptedException {
-            BasicConfigurator.configure();
-
             URI[] cacheFiles = context.getCacheFiles();
             if (cacheFiles.length < 1) {
                 throw new RuntimeException("Error before load dictionary from cache files.");
@@ -75,7 +73,7 @@ public class TaskOne {
             throw new RuntimeException("Please specify [dictionary] [input] [output]");
         }
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "inverted index");
+        Job job = Job.getInstance(conf, "Task One");
         job.setJarByClass(TaskOne.class);
         job.setMapperClass(TaskOne.TaskOneMapper.class);
         job.setReducerClass(TaskOne.TaskOneReducer.class);
