@@ -21,21 +21,20 @@ import java.util.Set;
 
 public class CoexistenceStatistics {
     public static class CoexistenceStatisticsMapper extends Mapper<Object, Text, Text, IntWritable> {
-        private Text K = new Text();
-        private IntWritable V = new IntWritable(1);
+        private static final IntWritable ONE = new IntWritable(1);
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             // 分割段落，得到出现的character数组
-            String[] characters = value.toString().split("\t");
+            String[] roles = value.toString().trim().split(" ");
             // 数组去重，得到character集合
-            Set<String> characterSet = new HashSet<String>(Arrays.asList(characters));
+            Set<String> roleSet = new HashSet<String>(Arrays.asList(roles));
             // 遍历实现该段落的同现统计
-            for (String characterA : characterSet) {
-                for (String characterB : characterSet) {
-                    if (!characterA.equals(characterB)) {
-                        K.set("<" + characterA + "," + characterB + ">");
-                        context.write(K, V);
+            for (String roleOne : roleSet) {
+                for (String roleTwo : roleSet) {
+                    if (!roleOne.equals(roleTwo)) {
+//                        K.set("<" + roleOne + "," + roleTwo + ">");
+                        context.write(new Text(String.format("<%s,%s>",roleOne,roleTwo)), ONE);
                     }
                 }
             }
@@ -43,7 +42,7 @@ public class CoexistenceStatistics {
     }
 
     public static class CoexistenceStatisticsReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
-        private IntWritable V = new IntWritable(0);
+//        private IntWritable V = new IntWritable(0);
 
         @Override
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
@@ -51,8 +50,8 @@ public class CoexistenceStatistics {
             for (IntWritable value : values) {
                 sum = sum + value.get();
             }
-            V.set(sum);
-            context.write(key, V);
+//            V.set(sum);
+            context.write(key, new IntWritable(sum));
         }
     }
 
