@@ -8,7 +8,10 @@ public class DecDoubleWritable extends DoubleWritable {
         return -super.compareTo(o);
     }
 
-    public DecDoubleWritable(Double val) {
+    public DecDoubleWritable(double val) {
         super(val);
     }
+
+    // bug fix: https://stackoverflow.com/questions/11446635/no-such-method-exception-hadoop-init
+    public DecDoubleWritable(){}
 }

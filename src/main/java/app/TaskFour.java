@@ -2,7 +2,6 @@ package app;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -12,7 +11,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import util.DecDoubleWritable;
 
 import java.io.IOException;
-import java.net.URI;
 
 
 public class TaskFour {
@@ -22,20 +20,23 @@ public class TaskFour {
     private static final int LOOP_TIMES = 20;
 
     public static class StepOneMapper extends Mapper<Object, Text, Text, Text> {
-        private final Text K = new Text();
-        private final Text V = new Text();
+//        private final Text K = new Text();
+//        private final Text V = new Text();
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String line = value.toString().trim();
             String[] items = line.split("\t");
 
-            if(!items[1].startsWith("[") || !items[1].endsWith("]" )){
+            if (items.length!=2 || !items[1].startsWith("[") || !items[1].endsWith("]")) {
                 throw new RuntimeException();
             }
-            String[] neighborsWithWeight = items[1].substring(1,items[1].length()-1).trim().split("|");
+            String[] neighborsWithWeight = items[1].substring(1, items[1].length() - 1).trim().split("\\|");
             String[] neighbors = new String[neighborsWithWeight.length];
-            for(int i = 0;i<neighbors.length;i++){
+            for (int i = 0; i < neighbors.length; i++) {
+                if(neighborsWithWeight[i].split(",").length <1){
+                    throw new RuntimeException(neighborsWithWeight[i]);
+                }
                 neighbors[i] = neighborsWithWeight[i].split(",")[0];
             }
 
@@ -44,15 +45,15 @@ public class TaskFour {
             builder.append('#');
 
             int builderBasicLength = builder.length();
-            for(String neighbor :neighbors){
+            for (String neighbor : neighbors) {
                 builder.append(neighbor);
                 builder.append('|');
             }
-            if(builder.length()>builderBasicLength){
-                builder.deleteCharAt(builder.length()-1);
+            if (builder.length() > builderBasicLength) {
+                builder.deleteCharAt(builder.length() - 1);
             }
 
-            context.write(new Text(items[0]),new Text(builder.toString()));
+            context.write(new Text(items[0]), new Text(builder.toString()));
 //
 //            // 设置默认page rank为1.0
 //            String pageRank = "1.0\t";
@@ -64,11 +65,11 @@ public class TaskFour {
         }
     }
 
-    public static class StepOneReducer extends Reducer<Text,Text,Text,Text> {
+    public static class StepOneReducer extends Reducer<Text, Text, Text, Text> {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for(Text value:values){
-                context.write(key,value);
+            for (Text value : values) {
+                context.write(key, value);
             }
         }
     }
@@ -93,7 +94,7 @@ public class TaskFour {
             // 迭代过程中保留链出信息
             context.write(new Text(role), new Text(prAndNeighbors[1]));
 
-            String[] neighbors = prAndNeighbors[1].trim().split("|");
+            String[] neighbors = prAndNeighbors[1].trim().split("\\|");
             double currentPr = Double.valueOf(prAndNeighbors[0]);
             double newPr = currentPr / neighbors.length;
 
@@ -120,7 +121,7 @@ public class TaskFour {
 //        private final Text K = new Text();
 //        private final Text V = new Text();
 
-        private final double damping = 0.85;
+        private final double DAMPING = 0.85;
 
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -140,9 +141,9 @@ public class TaskFour {
                 throw new RuntimeException();
             }
 
-            double newPr = 1 - damping + damping * sum;
+            double newPr = 1 - DAMPING + DAMPING * sum;
 
-            context.write(key,new Text(String.format("%f#%s",newPr,neighbors)));
+            context.write(key, new Text(String.format("%f#%s", newPr, neighbors)));
 
 
             //            double pageRank = 0;
@@ -163,7 +164,7 @@ public class TaskFour {
 
     }
 
-    private static class StepThreeMapper extends Mapper<Object,Text, DecDoubleWritable,Text>{
+    private static class StepThreeMapper extends Mapper<Object, Text, DecDoubleWritable, Text> {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] items = value.toString().trim().split("\t");
@@ -176,15 +177,15 @@ public class TaskFour {
                 throw new RuntimeException();
             }
 
-            context.write(new DecDoubleWritable(Double.valueOf(prAndNeighbors[0])),new Text(role));
+            context.write(new DecDoubleWritable(Double.valueOf(prAndNeighbors[0])), new Text(role));
         }
     }
 
-    private static class StepThreeReducer extends Reducer<DecDoubleWritable, Text, DecDoubleWritable, Text>{
+    private static class StepThreeReducer extends Reducer<DecDoubleWritable, Text, DecDoubleWritable, Text> {
         @Override
         public void reduce(DecDoubleWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for(Text value:values){
-                context.write(key,value);
+            for (Text value : values) {
+                context.write(key, value);
             }
         }
     }
@@ -201,14 +202,13 @@ public class TaskFour {
         job1.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job1, new Path(args[0]));
 
-        String stepTwoInput = String.format("%s/step1_out",args[1]);
+        String stepTwoInput = String.format("%s/step1_out", args[1]);
         FileOutputFormat.setOutputPath(job1, new Path(stepTwoInput));
-//        System.exit(job.waitForCompletion(true) ? 0 : 1);
+//        job1.waitForCompletion(true);
 
-
-        for(int i = 0;i<LOOP_TIMES;i++){
+        for (int i = 0; i < LOOP_TIMES; i++) {
             Configuration conf2 = new Configuration();
-            Job job2 = Job.getInstance(conf2, "Task Four Step Two");
+            Job job2 = Job.getInstance(conf2, String.format("Task Four Step Two Round %d",i));
             job2.setJarByClass(TaskFour.class);
             job2.setMapperClass(TaskFour.StepTwoMapper.class);
             job2.setReducerClass(TaskFour.StepTwoReducer.class);
@@ -218,9 +218,11 @@ public class TaskFour {
             job2.setOutputValueClass(Text.class);
             FileInputFormat.addInputPath(job2, new Path(stepTwoInput));
 
-            String path = String.format("%s/loop_%d",args[1],i);
+            String path = String.format("%s/loop_%d", args[1], i);
             FileOutputFormat.setOutputPath(job2, new Path(path));
             stepTwoInput = path;
+
+//            job2.waitForCompletion(true);
         }
 
         String stepThreeInput = stepTwoInput;
@@ -233,8 +235,10 @@ public class TaskFour {
         job3.setMapOutputValueClass(Text.class);
         job3.setOutputKeyClass(DecDoubleWritable.class);
         job3.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(job1, new Path(stepThreeInput));
-        FileOutputFormat.setOutputPath(job1, new Path(args[2]));
+        FileInputFormat.addInputPath(job3, new Path(stepThreeInput));
+        FileOutputFormat.setOutputPath(job3, new Path(args[2]));
+
+        System.exit(job3.waitForCompletion(true) ? 0 : 1);
 
     }
 }

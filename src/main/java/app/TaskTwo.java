@@ -19,7 +19,7 @@ import java.util.Set;
  * Task2：特征抽取，人物同现统计
  */
 
-public class CoexistenceStatistics {
+public class TaskTwo {
     public static class CoexistenceStatisticsMapper extends Mapper<Object, Text, Text, IntWritable> {
         private static final IntWritable ONE = new IntWritable(1);
 
@@ -59,9 +59,9 @@ public class CoexistenceStatistics {
         //以下配置均参考自官方文档
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "Task2:CharacterCoexistenceStatistics");
-        job.setJarByClass(CoexistenceStatistics.class);
-        job.setMapperClass(CoexistenceStatistics.CoexistenceStatisticsMapper.class);
-        job.setReducerClass(CoexistenceStatistics.CoexistenceStatisticsReducer.class);
+        job.setJarByClass(TaskTwo.class);
+        job.setMapperClass(TaskTwo.CoexistenceStatisticsMapper.class);
+        job.setReducerClass(TaskTwo.CoexistenceStatisticsReducer.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
         job.setOutputKeyClass(Text.class);
