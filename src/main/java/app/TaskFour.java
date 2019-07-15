@@ -17,7 +17,7 @@ public class TaskFour {
 
     private static final String PR_INIT = "1.0";
 
-    private static final int LOOP_TIMES = 20;
+    private static final int LOOP_TIMES = 50;
 
     public static class StepOneMapper extends Mapper<Object, Text, Text, Text> {
 //        private final Text K = new Text();
@@ -204,7 +204,7 @@ public class TaskFour {
 
         String stepTwoInput = String.format("%s/step1_out", args[1]);
         FileOutputFormat.setOutputPath(job1, new Path(stepTwoInput));
-//        job1.waitForCompletion(true);
+        job1.waitForCompletion(true);
 
         for (int i = 0; i < LOOP_TIMES; i++) {
             Configuration conf2 = new Configuration();
@@ -222,7 +222,7 @@ public class TaskFour {
             FileOutputFormat.setOutputPath(job2, new Path(path));
             stepTwoInput = path;
 
-//            job2.waitForCompletion(true);
+            job2.waitForCompletion(true);
         }
 
         String stepThreeInput = stepTwoInput;

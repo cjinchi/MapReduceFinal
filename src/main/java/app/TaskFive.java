@@ -16,10 +16,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-public class TaskFive{
+public class TaskFive {
     private final static String DIC_FILE_LABEL = "NAME_FILE";
 
-    public static class TaskFiveStepOneMapper extends Mapper<Object, Text, Text, Text> {
+    public static class StepOneMapper extends Mapper<Object, Text, Text, Text> {
         private Map<String, String> roleNameToId = new HashMap<>();
 
         @Override
@@ -47,7 +47,7 @@ public class TaskFive{
             // Type 1: <roleName,#roleId>
             context.write(new Text(roleName), new Text(sharpRoleId));
 
-            String[] neighbors = items[1].substring(1, items[1].length() - 1).split("|");
+            String[] neighbors = items[1].substring(1, items[1].length() - 1).split("\\|");
             for (int i = 0; i < neighbors.length; i++) {
                 neighbors[i] = neighbors[i].trim().split(",")[0];
                 // format as neighborName#neighborId
@@ -60,23 +60,23 @@ public class TaskFive{
         }
     }
 
-    public static class TaskFiveStepOneReducer extends Reducer<Text, Text, Text, Text> {
+    public static class StepOneReducer extends Reducer<Text, Text, Text, Text> {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for(Text value:values){
-                context.write(key,value);
+            for (Text value : values) {
+                context.write(key, value);
             }
         }
     }
 
-    public static class TaskFiveStepTwoMapper extends Mapper<Text, Text, Text, Text> {
+    public static class StepTwoMapper extends Mapper<Object, Text, Text, Text> {
         @Override
-        public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-            context.write(key, value);
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+
         }
     }
 
-    public static class TaskFiveStepTwoReducer extends Reducer<Text, Text, Text, Text> {
+    public static class StepTwoReducer extends Reducer<Text, Text, Text, Text> {
 
 
         @Override
@@ -124,14 +124,14 @@ public class TaskFive{
 
             //Check if current role should change its id. If so, no need to continue iteration.
             boolean roleIdShouldChange = true;
-            for(Map.Entry<String,Integer> entry:maxIdsWithCount){
-                if(roleId.equals(entry.getKey())){
+            for (Map.Entry<String, Integer> entry : maxIdsWithCount) {
+                if (roleId.equals(entry.getKey())) {
                     roleIdShouldChange = false;
                     break;
                 }
             }
 
-            if(roleIdShouldChange){
+            if (roleIdShouldChange) {
                 //TODO:report change here
 
                 //"ties are broken uniformly randomly"
@@ -139,29 +139,35 @@ public class TaskFive{
                 roleId = maxIdsWithCount.get(0).getKey();
             }
 
-            context.write(new Text(roleName),new Text(String.format("#%s",roleId)));
-            Text roleSharpId = new Text(String.format("%s#%s",roleName,roleId));
-            for(String neighbor:neighborsOfCurrentRole){
-                context.write(new Text(neighbor),roleSharpId);
+            context.write(new Text(roleName), new Text(String.format("#%s", roleId)));
+            Text roleSharpId = new Text(String.format("%s#%s", roleName, roleId));
+            for (String neighbor : neighborsOfCurrentRole) {
+                context.write(new Text(neighbor), roleSharpId);
             }
 
         }
     }
 
-    public static class TaskFiveStepThreeMapper extends Mapper<Text, Text, Text, Text>{
+    public static class StepThreeMapper extends Mapper<Object, Text, Text, Text> {
+//        @Override
+//        public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
+//            if (value.toString().startsWith("#")) {
+//                context.write(key, new Text(value.toString().substring(1)));
+//            }
+//        }
+
+
         @Override
-        public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-            if(value.toString().startsWith("#")){
-                context.write(key,new Text(value.toString().substring(1)));
-            }
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+
         }
     }
 
-    public static class TaskFiveStepThreeReducer extends Reducer<Text, Text, Text, Text>{
+    public static class StepThreeReducer extends Reducer<Text, Text, Text, Text> {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for(Text value:values){
-                context.write(key,value);
+            for (Text value : values) {
+                context.write(key, value);
             }
         }
     }

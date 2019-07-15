@@ -2,6 +2,7 @@ package app;
 
 import org.ansj.domain.Term;
 import org.ansj.library.DicLibrary;
+import org.ansj.splitWord.analysis.DicAnalysis;
 import org.ansj.splitWord.analysis.ToAnalysis;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -42,7 +43,7 @@ public class TaskOne {
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-            List<Term> terms = ToAnalysis.parse(value.toString()).getTerms();
+            List<Term> terms = DicAnalysis.parse(value.toString()).getTerms();
             StringBuilder builder = new StringBuilder();
             for (Term term : terms) {
                 if (term.getNatureStr().equals(TAG_NAME)) {
