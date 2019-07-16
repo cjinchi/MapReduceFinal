@@ -14,12 +14,10 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.partition.TotalOrderPartitioner;
 
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.URI;
 
-public class TaskSix {
+public class TaskSixOne {
 
-    public static class JobOneStepOneMapper extends Mapper<Object, Text, DoubleWritable, Text> {
+    public static class TaskSixOneStepOneMapper extends Mapper<Object, Text, DoubleWritable, Text> {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] items = value.toString().trim().split("\t");
@@ -27,7 +25,7 @@ public class TaskSix {
         }
     }
 
-    public static class JobOneStepOneReducer extends Reducer<DoubleWritable, Text, DoubleWritable, Text> {
+    public static class TaskSixOneStepOneReducer extends Reducer<DoubleWritable, Text, DoubleWritable, Text> {
         @Override
         public void reduce(DoubleWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             for (Text value : values) {
@@ -37,14 +35,14 @@ public class TaskSix {
     }
 
 
-    public static class JobOneStepTwoMapper extends Mapper<Text, Text, Text, Text> {
+    public static class TaskSixOneStepTwoMapper extends Mapper<Text, Text, Text, Text> {
         @Override
         public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
             context.write(key, value);
         }
     }
 
-    public static class JobOneStepTwoReducer extends Reducer<Text, Text, Text, DoubleWritable> {
+    public static class TaskSixOneStepTwoReducer extends Reducer<Text, Text, Text, DoubleWritable> {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             for (Text value : values) {
@@ -73,21 +71,23 @@ public class TaskSix {
         @Override
         public int compare(WritableComparable a, WritableComparable b) {
 //            throw new RuntimeException(a.toString() + "|" + b.toString());
-            return -Double.compare(Double.valueOf(a.toString()),Double.valueOf(b.toString()));
+            return -Double.compare(Double.valueOf(a.toString()), Double.valueOf(b.toString()));
         }
     }
 
+
+
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-        if (args.length < 3) {
+        if (args.length < 4) {
             throw new RuntimeException();
         }
         // Args: [input] [output] [partition] [inter]
 
         Configuration conf1 = new Configuration();
         Job job1 = Job.getInstance(conf1, "Task Six Job One Step One");
-        job1.setJarByClass(TaskSix.class);
-        job1.setMapperClass(JobOneStepOneMapper.class);
-        job1.setReducerClass(JobOneStepOneReducer.class);
+        job1.setJarByClass(TaskSixOne.class);
+        job1.setMapperClass(TaskSixOneStepOneMapper.class);
+        job1.setReducerClass(TaskSixOneStepOneReducer.class);
         job1.setMapOutputKeyClass(DoubleWritable.class);
         job1.setMapOutputValueClass(Text.class);
         job1.setOutputKeyClass(DoubleWritable.class);
@@ -100,9 +100,9 @@ public class TaskSix {
         Configuration conf2 = new Configuration();
         conf2.set("mapreduce.totalorderpartitioner.naturalorder", "false");
         Job job2 = Job.getInstance(conf2, "Task Six Job One Step Two");
-        job2.setJarByClass(TaskSix.class);
-        job2.setMapperClass(JobOneStepTwoMapper.class);
-        job2.setReducerClass(JobOneStepTwoReducer.class);
+        job2.setJarByClass(TaskSixOne.class);
+        job2.setMapperClass(TaskSixOneStepTwoMapper.class);
+        job2.setReducerClass(TaskSixOneStepTwoReducer.class);
         job2.setMapOutputKeyClass(Text.class);
         job2.setMapOutputValueClass(Text.class);
         job2.setOutputKeyClass(Text.class);
@@ -113,14 +113,14 @@ public class TaskSix {
         job2.setInputFormatClass(KeyValueTextInputFormat.class);
         job2.setSortComparatorClass(MyComparator.class);
         job2.setNumReduceTasks(5);
-
         TotalOrderPartitioner.setPartitionFile(job2.getConfiguration(), new Path(args[2]));
         InputSampler.Sampler<Text, Text> sampler = new InputSampler.RandomSampler<>(0.01, 1000, 100);
         InputSampler.writePartitionFile(job2, sampler);
-
         job2.setPartitionerClass(TotalOrderPartitioner.class);
 
-        System.exit(job2.waitForCompletion(true) ? 0 : 1);
+        job2.waitForCompletion(true);
+
+
 
 
         //        Configuration conf = new Configuration();
