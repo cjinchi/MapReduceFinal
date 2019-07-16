@@ -2,13 +2,13 @@ package app;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import util.DecDoubleWritable;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -196,7 +196,7 @@ public class TaskFour {
 
     }
 
-    private static class StepThreeMapper extends Mapper<Object, Text, DecDoubleWritable, Text> {
+    private static class StepThreeMapper extends Mapper<Object, Text, Text, DoubleWritable> {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] items = value.toString().trim().split("\t");
@@ -209,14 +209,14 @@ public class TaskFour {
                 throw new RuntimeException();
             }
 
-            context.write(new DecDoubleWritable(Double.valueOf(prAndNeighbors[0])), new Text(role));
+            context.write(new Text(role), new DoubleWritable(Double.valueOf(prAndNeighbors[0])));
         }
     }
 
-    private static class StepThreeReducer extends Reducer<DecDoubleWritable, Text, DecDoubleWritable, Text> {
+    private static class StepThreeReducer extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
         @Override
-        public void reduce(DecDoubleWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            for (Text value : values) {
+        public void reduce(Text key, Iterable<DoubleWritable> values, Context context) throws IOException, InterruptedException {
+            for (DoubleWritable value : values) {
                 context.write(key, value);
             }
         }
@@ -263,10 +263,10 @@ public class TaskFour {
         job3.setJarByClass(TaskFour.class);
         job3.setMapperClass(TaskFour.StepThreeMapper.class);
         job3.setReducerClass(TaskFour.StepThreeReducer.class);
-        job3.setMapOutputKeyClass(DecDoubleWritable.class);
-        job3.setMapOutputValueClass(Text.class);
-        job3.setOutputKeyClass(DecDoubleWritable.class);
-        job3.setOutputValueClass(Text.class);
+        job3.setMapOutputKeyClass(Text.class);
+        job3.setMapOutputValueClass(DoubleWritable.class);
+        job3.setOutputKeyClass(Text.class);
+        job3.setOutputValueClass(DoubleWritable.class);
         FileInputFormat.addInputPath(job3, new Path(stepThreeInput));
         FileOutputFormat.setOutputPath(job3, new Path(args[2]));
 
