@@ -11,13 +11,15 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import util.DecDoubleWritable;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class TaskFour {
 
     private static final String PR_INIT = "1.0";
 
-    private static final int LOOP_TIMES = 50;
+    private static final int LOOP_TIMES = 25;
 
     public static class StepOneMapper extends Mapper<Object, Text, Text, Text> {
 //        private final Text K = new Text();
@@ -28,24 +30,25 @@ public class TaskFour {
             String line = value.toString().trim();
             String[] items = line.split("\t");
 
-            if (items.length!=2 || !items[1].startsWith("[") || !items[1].endsWith("]")) {
+            if (items.length != 2 || !items[1].startsWith("[") || !items[1].endsWith("]")) {
                 throw new RuntimeException();
             }
             String[] neighborsWithWeight = items[1].substring(1, items[1].length() - 1).trim().split("\\|");
-            String[] neighbors = new String[neighborsWithWeight.length];
-            for (int i = 0; i < neighbors.length; i++) {
-                if(neighborsWithWeight[i].split(",").length <1){
-                    throw new RuntimeException(neighborsWithWeight[i]);
-                }
-                neighbors[i] = neighborsWithWeight[i].split(",")[0];
-            }
+//            String[] neighbors = new String[neighborsWithWeight.length];
+//            for (int i = 0; i < neighborsWithWeight.length; i++) {
+//                if(neighborsWithWeight[i].split(",").length <1){
+//                    throw new RuntimeException(neighborsWithWeight[i]);
+//                }
+//                neighbors[i] = neighborsWithWeight[i].split(",")[0];
+//            }
 
+            // builder is pr#neighbor1,weight|neighbor2,weight|...
             StringBuilder builder = new StringBuilder();
             builder.append(PR_INIT);
             builder.append('#');
 
             int builderBasicLength = builder.length();
-            for (String neighbor : neighbors) {
+            for (String neighbor : neighborsWithWeight) {
                 builder.append(neighbor);
                 builder.append('|');
             }
@@ -91,16 +94,27 @@ public class TaskFour {
                 throw new RuntimeException();
             }
 
+            // value is pr#neighbor1,weight|neighbor2,weight|...
+
             // 迭代过程中保留链出信息
+            // <node,neighbor1,weight|neighbor2,weight|...>
             context.write(new Text(role), new Text(prAndNeighbors[1]));
 
             String[] neighbors = prAndNeighbors[1].trim().split("\\|");
             double currentPr = Double.valueOf(prAndNeighbors[0]);
-            double newPr = currentPr / neighbors.length;
+//            double newPr = currentPr / neighbors.length;
+//            double newPr = currentPr;
 
             for (String neighbor : neighbors) {
                 // '#' can be used to recognize type of this K-V pair
-                context.write(new Text(neighbor), new Text(String.format("#%f", newPr)));
+                String[] neighborAndWeight = neighbor.split(",");
+                if (neighborAndWeight.length != 2) {
+                    throw new RuntimeException();
+                }
+                if (Double.valueOf(neighborAndWeight[1]) > 1) {
+                    throw new RuntimeException();
+                }
+                context.write(new Text(neighborAndWeight[0]), new Text(String.format("#%f", currentPr * Double.valueOf(neighborAndWeight[1]))));
             }
 
 //            String[] name_weights = items[2].replace("[", "")
@@ -126,10 +140,18 @@ public class TaskFour {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             double sum = 0;
+//            int numOfNeighbor = 0;
+//            Map<String,Double> neighborToPr = new HashMap<>();
             String neighbors = null;
             for (Text value : values) {
                 if (value.toString().startsWith("#")) {
                     sum += Double.valueOf(value.toString().substring(1));
+//                    numOfNeighbor += 1;
+//                    String[] prAndNeighbor = value.toString().substring(1).split("#");
+//                    if(prAndNeighbor.length!=2){
+//                        throw new RuntimeException();
+//                    }
+//                    neighborToPr.put(prAndNeighbor[1],Double.valueOf(prAndNeighbor[0]));
                 } else {
                     if (neighbors != null) {
                         throw new RuntimeException();
@@ -141,7 +163,17 @@ public class TaskFour {
                 throw new RuntimeException();
             }
 
-            double newPr = 1 - DAMPING + DAMPING * sum;
+//            double sum = 0;
+//            String[] neighborsAndWeight = neighbors.trim().split("\\|");
+//            for(String neighbor:neighborsAndWeight){
+//                String[] items = neighbor.split(",");
+//                if(items.length != 2 || !neighborToPr.containsKey(items[0])){
+//                    throw new RuntimeException();
+//                }
+//                sum += (neighborToPr.get(items[0])*Double.valueOf(items[1]));
+//            }
+
+            double newPr = 1.0 - DAMPING + DAMPING * sum;
 
             context.write(key, new Text(String.format("%f#%s", newPr, neighbors)));
 
@@ -208,7 +240,7 @@ public class TaskFour {
 
         for (int i = 0; i < LOOP_TIMES; i++) {
             Configuration conf2 = new Configuration();
-            Job job2 = Job.getInstance(conf2, String.format("Task Four Step Two Round %d",i));
+            Job job2 = Job.getInstance(conf2, String.format("Task Four Step Two Round %d", i));
             job2.setJarByClass(TaskFour.class);
             job2.setMapperClass(TaskFour.StepTwoMapper.class);
             job2.setReducerClass(TaskFour.StepTwoReducer.class);
