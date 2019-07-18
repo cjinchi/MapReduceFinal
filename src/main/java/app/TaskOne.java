@@ -29,7 +29,7 @@ public class TaskOne {
     public static class TaskOneMapper extends Mapper<Object, Text, Text, Text> {
 
         @Override
-        public void setup(Context context) throws IOException, InterruptedException {
+        public void setup(Context context) throws IOException {
             URI[] cacheFiles = context.getCacheFiles();
             if (cacheFiles.length < 1) {
                 throw new RuntimeException("Error before load dictionary from cache files.");
@@ -76,8 +76,8 @@ public class TaskOne {
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "Task One");
         job.setJarByClass(TaskOne.class);
-        job.setMapperClass(TaskOne.TaskOneMapper.class);
-        job.setReducerClass(TaskOne.TaskOneReducer.class);
+        job.setMapperClass(TaskOneMapper.class);
+        job.setReducerClass(TaskOneReducer.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);

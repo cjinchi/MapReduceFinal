@@ -22,14 +22,6 @@ public class TaskThree {
     public static class TaskThreeMapper extends Mapper<Object, Text, Text, IntWritable> {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-
-//            StringTokenizer itr = new StringTokenizer(value.toString());
-//            Text name = new Text();
-//            IntWritable number = new IntWritable();
-//            if (itr.hasMoreTokens())
-//                name.set(itr.nextToken());
-//            if (itr.hasMoreTokens())
-//                number.set(Integer.parseInt(itr.nextToken()));
             String[] items = value.toString().trim().split("\t");
             if (items.length != 2) {
                 throw new RuntimeException();
@@ -43,7 +35,6 @@ public class TaskThree {
 
         @Override
         public int getPartition(Text key, IntWritable value, int numReduceTasks) {
-//            term.set(key.toString().split(",")[0]);
             String[] items = key.toString().trim().split(",");
             if (items.length != 2 || !items[0].startsWith("<")) {
                 throw new RuntimeException();
@@ -53,14 +44,8 @@ public class TaskThree {
     }
 
     public static class TaskThreeReducer extends Reducer<Text, IntWritable, Text, Text> {
-        //类似于temp变量，用于把String转为Text
-//        private Text str1 = new Text();
-//        private Text str2 = new Text();
-
         private String currentName = null;
         private int currentCount = 0;
-
-
         private Map<String, Integer> postings = new HashMap<>();
 
         @Override
@@ -105,10 +90,8 @@ public class TaskThree {
                 return;
             }
             double total = currentCount;
-//            double percent = 1.0 / currentCount;
             StringBuilder builder = new StringBuilder();
             builder.append('[');
-//            int index = 0;
             for (Map.Entry<String, Integer> entry : postings.entrySet()) {
                 builder.append(entry.getKey());
                 builder.append(',');
@@ -119,23 +102,18 @@ public class TaskThree {
                 builder.deleteCharAt(builder.length()-1);
             }
             builder.append(']');
-//            str1.set(currentName);
-//            str2.set(builder.toString());
-//            System.out.println(currentName + builder.toString());
             context.write(new Text(currentName),new Text(builder.toString()));
         }
 
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-        //以下配置均参考自官方文档
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "task3");
+        Job job = Job.getInstance(conf, "Task Three");
         job.setJarByClass(TaskThree.class);
-        job.setMapperClass(TaskThree.TaskThreeMapper.class);
-        //      job.setCombinerClass(InvertedIndex.InvertedIndexCombiner.class);
-        job.setReducerClass(TaskThree.TaskThreeReducer.class);
-        job.setPartitionerClass(TaskThree.TaskThreePartitioner.class);
+        job.setMapperClass(TaskThreeMapper.class);
+        job.setReducerClass(TaskThreeReducer.class);
+        job.setPartitionerClass(TaskThreePartitioner.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
         job.setOutputKeyClass(Text.class);

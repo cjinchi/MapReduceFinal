@@ -20,7 +20,7 @@ import java.util.Set;
  */
 
 public class TaskTwo {
-    public static class CoexistenceStatisticsMapper extends Mapper<Object, Text, Text, IntWritable> {
+    public static class TaskTwoMapper extends Mapper<Object, Text, Text, IntWritable> {
         private static final IntWritable ONE = new IntWritable(1);
 
         @Override
@@ -28,12 +28,11 @@ public class TaskTwo {
             // 分割段落，得到出现的character数组
             String[] roles = value.toString().trim().split(" ");
             // 数组去重，得到character集合
-            Set<String> roleSet = new HashSet<String>(Arrays.asList(roles));
+            Set<String> roleSet = new HashSet<>(Arrays.asList(roles));
             // 遍历实现该段落的同现统计
             for (String roleOne : roleSet) {
                 for (String roleTwo : roleSet) {
                     if (!roleOne.equals(roleTwo)) {
-//                        K.set("<" + roleOne + "," + roleTwo + ">");
                         context.write(new Text(String.format("<%s,%s>",roleOne,roleTwo)), ONE);
                     }
                 }
@@ -41,32 +40,27 @@ public class TaskTwo {
         }
     }
 
-    public static class CoexistenceStatisticsReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
-//        private IntWritable V = new IntWritable(0);
-
+    public static class TaskTwoReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
         @Override
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
             int sum = 0;
             for (IntWritable value : values) {
                 sum = sum + value.get();
             }
-//            V.set(sum);
             context.write(key, new IntWritable(sum));
         }
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-        //以下配置均参考自官方文档
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "Task2:CharacterCoexistenceStatistics");
+        Job job = Job.getInstance(conf, "Task Two");
         job.setJarByClass(TaskTwo.class);
-        job.setMapperClass(TaskTwo.CoexistenceStatisticsMapper.class);
-        job.setReducerClass(TaskTwo.CoexistenceStatisticsReducer.class);
+        job.setMapperClass(TaskTwoMapper.class);
+        job.setReducerClass(TaskTwoReducer.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
-
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 

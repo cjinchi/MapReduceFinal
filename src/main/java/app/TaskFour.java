@@ -22,9 +22,6 @@ public class TaskFour {
     private static final int LOOP_TIMES = 25;
 
     public static class StepOneMapper extends Mapper<Object, Text, Text, Text> {
-//        private final Text K = new Text();
-//        private final Text V = new Text();
-
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String line = value.toString().trim();
@@ -34,13 +31,6 @@ public class TaskFour {
                 throw new RuntimeException();
             }
             String[] neighborsWithWeight = items[1].substring(1, items[1].length() - 1).trim().split("\\|");
-//            String[] neighbors = new String[neighborsWithWeight.length];
-//            for (int i = 0; i < neighborsWithWeight.length; i++) {
-//                if(neighborsWithWeight[i].split(",").length <1){
-//                    throw new RuntimeException(neighborsWithWeight[i]);
-//                }
-//                neighbors[i] = neighborsWithWeight[i].split(",")[0];
-//            }
 
             // builder is pr#neighbor1,weight|neighbor2,weight|...
             StringBuilder builder = new StringBuilder();
@@ -57,14 +47,6 @@ public class TaskFour {
             }
 
             context.write(new Text(items[0]), new Text(builder.toString()));
-//
-//            // 设置默认page rank为1.0
-//            String pageRank = "1.0\t";
-//            String[] line = value.toString().split("\t");
-//            K.set(line[0]);
-//            V.set(pageRank + line[1]);
-//            // 输出格式：person pageRank [name,weight|name,weight|...]
-//            context.write(K, V);
         }
     }
 
@@ -78,10 +60,7 @@ public class TaskFour {
     }
 
     private static class StepTwoMapper extends Mapper<Object, Text, Text, Text> {
-//        private final Text K = new Text();
-//        private final Text V = new Text();
-
-        @Override
+ @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] items = value.toString().trim().split("\t");
             // format: <role,currentPR#neighbor1|neighbor2|...>
@@ -102,8 +81,6 @@ public class TaskFour {
 
             String[] neighbors = prAndNeighbors[1].trim().split("\\|");
             double currentPr = Double.valueOf(prAndNeighbors[0]);
-//            double newPr = currentPr / neighbors.length;
-//            double newPr = currentPr;
 
             for (String neighbor : neighbors) {
                 // '#' can be used to recognize type of this K-V pair
@@ -116,42 +93,20 @@ public class TaskFour {
                 }
                 context.write(new Text(neighborAndWeight[0]), new Text(String.format("#%f", currentPr * Double.valueOf(neighborAndWeight[1]))));
             }
-
-//            String[] name_weights = items[2].replace("[", "")
-//                    .replace("]", "")
-//                    .split("\\|");
-//            for (String name_weight : name_weights) {
-//                String name = name_weight.split(",")[0];
-//                double weight = Double.valueOf(name_weight.split(",")[1]);
-//                K.set(name);
-//                // "&"作为标记区分
-//                V.set("&" + weight * currentPR);
-//                context.write(K, V);
-//            }
         }
     }
 
     private static class StepTwoReducer extends Reducer<Text, Text, Text, Text> {
-//        private final Text K = new Text();
-//        private final Text V = new Text();
 
         private final double DAMPING = 0.85;
 
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             double sum = 0;
-//            int numOfNeighbor = 0;
-//            Map<String,Double> neighborToPr = new HashMap<>();
             String neighbors = null;
             for (Text value : values) {
                 if (value.toString().startsWith("#")) {
                     sum += Double.valueOf(value.toString().substring(1));
-//                    numOfNeighbor += 1;
-//                    String[] prAndNeighbor = value.toString().substring(1).split("#");
-//                    if(prAndNeighbor.length!=2){
-//                        throw new RuntimeException();
-//                    }
-//                    neighborToPr.put(prAndNeighbor[1],Double.valueOf(prAndNeighbor[0]));
                 } else {
                     if (neighbors != null) {
                         throw new RuntimeException();
@@ -163,35 +118,9 @@ public class TaskFour {
                 throw new RuntimeException();
             }
 
-//            double sum = 0;
-//            String[] neighborsAndWeight = neighbors.trim().split("\\|");
-//            for(String neighbor:neighborsAndWeight){
-//                String[] items = neighbor.split(",");
-//                if(items.length != 2 || !neighborToPr.containsKey(items[0])){
-//                    throw new RuntimeException();
-//                }
-//                sum += (neighborToPr.get(items[0])*Double.valueOf(items[1]));
-//            }
-
             double newPr = 1.0 - DAMPING + DAMPING * sum;
 
             context.write(key, new Text(String.format("%f#%s", newPr, neighbors)));
-
-
-            //            double pageRank = 0;
-//            String name_weights = "";
-//            for (Text v : values) {
-//                String line = v.toString();
-//                if (line.contains("&")) {
-//                    pageRank += Double.valueOf(line.split("&")[1]);
-//                } else {
-//                    name_weights = line;
-//                }
-//            }
-//            K.set(key);
-//            V.set(String.valueOf(0.15 + 0.85 * pageRank) + "\t" + name_weights);
-//            // 输出格式：person pageRank [name,weight|name,weight|...]
-//            context.write(K, V);
         }
 
     }
