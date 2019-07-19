@@ -11,7 +11,9 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.log4j.BasicConfigurator;
 
 import java.io.BufferedReader;
@@ -43,6 +45,8 @@ public class TaskOne {
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            String fileName = ((FileSplit) context.getInputSplit()).getPath().getName();
+
             List<Term> terms = DicAnalysis.parse(value.toString()).getTerms();
             StringBuilder builder = new StringBuilder();
             for (Term term : terms) {
@@ -53,17 +57,26 @@ public class TaskOne {
             }
             if (builder.length() > 0) {
                 builder.deleteCharAt(builder.length() - 1);
-                context.write(new Text(builder.toString()), new Text());
+                context.write(new Text(fileName), new Text(builder.toString()));
             }
 
         }
     }
 
     public static class TaskOneReducer extends Reducer<Text, Text, Text, Text> {
+        private MultipleOutputs<Text, Text> outputs;
+
+        @Override
+        public void setup(Context context) throws IOException, InterruptedException {
+            outputs = new MultipleOutputs<>(context);
+        }
+
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             for (Text value : values) {
-                context.write(key, value);
+//                context.write(key, value);
+//                outputs.write(key.toString(),value,new Text());
+                outputs.write(value, new Text(), key.toString());
             }
         }
     }
