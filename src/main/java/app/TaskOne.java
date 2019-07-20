@@ -71,13 +71,21 @@ public class TaskOne {
             outputs = new MultipleOutputs<>(context);
         }
 
+
+
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             for (Text value : values) {
-//                context.write(key, value);
+//                context.write(value, new Text());
 //                outputs.write(key.toString(),value,new Text());
-                outputs.write(value, new Text(), key.toString());
+                outputs.write(value, new Text(), key.toString().substring(2,4));
+
             }
+        }
+
+        @Override
+        public void cleanup(Context context) throws IOException, InterruptedException {
+            outputs.close();
         }
     }
 
